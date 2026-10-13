@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en" class="h-full bg-[#0b0e14]">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RateThis.live - Where Petty Debates Become Global Wars</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- FontAwesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      .glow-btn {
+        background: linear-gradient(90deg, #06b6d4 0%, #a855f7 100%);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-[#0a0d14] text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden"
+  >
+    <!-- NOTIFICATION SLIDE DRAWER -->
+    <div
+      id="notif-drawer"
+      class="fixed inset-y-0 right-0 w-80 bg-[#0e1320] border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 p-5 flex flex-col space-y-4"
+    >
+      <div
+        class="flex justify-between items-center border-b border-slate-800 pb-3"
+      >
+        <h3 class="font-bold text-sm text-white flex items-center space-x-2">
+          <i class="fa-regular fa-bell text-cyan-400"></i>
+          <span>Notifications</span>
+        </h3>
+        <button
+          onclick="toggleNotifDrawer()"
+          class="text-slate-400 hover:text-white"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="notif-list" class="space-y-3 text-xs flex-grow overflow-y-auto">
+        <div class="bg-[#080b12] p-3 rounded-xl border border-slate-800">
+          <p class="font-bold text-cyan-400">Welcome to RateThis.live!</p>
+          <p class="text-slate-400 text-[11px] mt-1">
+            Vote in Blitz Mode to rack up your Impact Multiplier.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- WELCOME MODAL POPUP -->
+    <div
+      id="welcome-modal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+    >
+      <div
+        class="bg-[#0f1523] border border-cyan-500/30 rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 text-center"
+      >
+        <div
+          class="inline-flex items-center space-x-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider"
+        >
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span>Welcome to the Arena</span>
+        </div>
+        <div>
+          <h2 class="text-3xl font-black text-white tracking-tight">
+            RateThis.live
+          </h2>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            <strong class="text-cyan-400"
+              >Where Petty Debates Become Global Wars.</strong
+            >
+            Your opinion matters, but the internet definitely disagrees.
+          </p>
+        </div>
+        <button
+          onclick="closeWelcomeModal()"
+          class="w-full glow-btn text-white font-black py-3 rounded-xl text-sm tracking-wide shadow-lg"
+        >
+          Enter the Chaos →
+        </button>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <header
+      class="border-b border-slate-800/80 bg-[#0c101a] px-6 py-3 sticky top-0 z-40"
+    >
+      <div class="max-w-[1500px] mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-cyan-400 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-fire text-white text-sm"></i>
+          </div>
+          <div>
+            <span class="font-black text-lg text-white tracking-wide"
+              >RateThis<span class="text-cyan-400">.live</span></span
+            >
+            <span
+              class="bg-rose-500/20 text-rose-400 text-[9px] font-extrabold px-1.5 py-0.5 rounded ml-2"
+              >LIVE</span
+            >
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <button
+            id="bell-btn"
+            onclick="toggleNotifDrawer()"
+            class="text-slate-400 hover:text-white text-sm p-2 rounded-lg bg-slate-800/50 border border-slate-700/50 relative"
+          >
+            <i class="fa-regular fa-bell"></i>
+            <span
+              id="notif-dot"
+              class="absolute top-1 right-1 w-2 h-2 rounded-full bg-cyan-400 hidden"
+            ></span>
+          </button>
+          <div
+            class="flex items-center space-x-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-bold"
+          >
+            <i class="fa-solid fa-bolt"></i>
+            <span>Streak: <strong id="user-streak">0x</strong></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- DASHBOARD -->
+    <main
+      class="max-w-[1500px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow"
+    >
+      <!-- LEFT COLUMN -->
+      <aside class="lg:col-span-3 space-y-6 flex flex-col">
+        <div
+          class="bg-[#0e1320] border border-slate-800/80 rounded-2xl p-5 space-y-4"
+        >
+          <div
+            class="flex justify-between items-center border-b border-slate-800 pb-3"
+          >
+            <span
+              class="text-xs font-bold text-slate-400 tracking-wider uppercase"
+              >Your Impact Score</span
+            >
+            <i class="fa-solid fa-chart-line text-cyan-400 text-xs"></i>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-[#080b12] p-3 rounded-xl border border-slate-800/60">
+              <span class="text-[10px] text-slate-500 block">Votes Cast</span>
+              <span
+                id="votes-cast-count"
+                class="text-xl font-black text-cyan-400"
+                >0</span
+              >
+            </div>
+            <div class="bg-[#080b12] p-3 rounded-xl border border-slate-800/60">
+              <span class="text-[10px] text-slate-500 block"
+                >Active Multiplier</span
+              >
+              <span
+                id="multiplier-val"
+                class="text-xl font-black text-amber-400"
+                >1.0x</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Global Debates (Full Space Height) -->
+        <div
+          class="bg-[#0e1320] border border-slate-800/80 rounded-2xl p-5 space-y-4 flex-grow flex flex-col"
+        >
+          <div
+            class="flex justify-between items-center border-b border-slate-800 pb-3"
+          >
+            <h3
+              class="text-xs font-black text-white tracking-wider uppercase flex items-center space-x-2"
+            >
+              <i class="fa-solid fa-crown text-amber-400"></i>
+              <span>Top Global Debates</span>
+            </h3>
+            <span
+              class="text-[9px] text-slate-500 bg-slate-800/80 px-2 py-0.5 rounded"
+              >Updated Live</span
+            >
+          </div>
+          <div
+            id="top-debates-list"
+            class="space-y-2.5 text-xs flex-grow overflow-y-auto"
+          >
+            <div class="text-slate-500 py-4 text-center">
+              Loading debates...
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER COLUMN -->
+      <section class="lg:col-span-6 flex flex-col space-y-4">
+        <div
+          class="bg-[#0e1320] border border-slate-800/80 rounded-2xl p-5 md:p-6 flex-grow flex flex-col justify-between space-y-6 relative overflow-hidden"
+        >
+          <div class="space-y-2">
+            <div
+              class="w-full bg-slate-800/60 h-2 rounded-full overflow-hidden"
+            >
+              <div
+                id="blitz-timer-bar"
+                class="h-full bg-gradient-to-r from-cyan-400 via-purple-500 to-rose-500 transition-all duration-100 ease-linear w-full"
+              ></div>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span
+                class="font-extrabold text-amber-400 flex items-center space-x-1"
+              >
+                <i class="fa-solid fa-bolt"></i>
+                <span>BLITZ MODE</span>
+              </span>
+              <span id="timer-text" class="font-mono font-bold text-cyan-400"
+                >5.0s</span
+              >
+            </div>
+          </div>
+
+          <!-- Matchup Cards with Result Overlay -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative my-auto">
+            <div
+              class="absolute inset-0 pointer-events-none flex items-center justify-center z-20 hidden md:flex"
+            >
+              <div
+                class="bg-[#0a0d14] text-white font-black rounded-full w-10 h-10 flex items-center justify-center text-xs shadow-2xl border-2 border-slate-700 italic"
+              >
+                VS
+              </div>
+            </div>
+
+            <!-- Option A -->
+            <div
+              id="card-a"
+              onclick="submitVote('A')"
+              class="group relative rounded-2xl overflow-hidden border border-slate-800 hover:border-cyan-500/60 transition duration-300 cursor-pointer h-72 md:h-80 flex flex-col justify-end p-5"
+            >
+              <img
+                id="img-a"
+                src=""
+                class="absolute inset-0 w-full h-full object-cover opacity-60"
+              />
+              <div
+                class="absolute inset-0 bg-gradient-to-t from-[#0a0d14] via-[#0a0d14]/40 to-transparent"
+              ></div>
+
+              <!-- Result Overlay -->
+              <div
+                id="overlay-a"
+                class="absolute inset-0 bg-cyan-950/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-2 opacity-0 pointer-events-none transition-opacity duration-300"
+              >
+                <span
+                  id="winner-tag-a"
+                  class="bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded"
+                  >WINNER 🏆</span
+                >
+                <span id="pct-a" class="text-4xl font-black text-white"
+                  >50%</span
+                >
+                <span id="elo-tag-a" class="text-xs font-bold text-cyan-400"
+                  >Elo: 1232 (+32)</span
+                >
+              </div>
+
+              <div class="relative z-10 space-y-1">
+                <span
+                  class="bg-cyan-500/20 text-cyan-400 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-500/30"
+                  >OPTION A</span
+                >
+                <h2 id="title-a" class="text-xl font-black text-white">
+                  Option A
+                </h2>
+                <p id="desc-a" class="text-xs text-slate-300 line-clamp-2">
+                  Description A...
+                </p>
+              </div>
+            </div>
+
+            <!-- Option B -->
+            <div
+              id="card-b"
+              onclick="submitVote('B')"
+              class="group relative rounded-2xl overflow-hidden border border-slate-800 hover:border-purple-500/60 transition duration-300 cursor-pointer h-72 md:h-80 flex flex-col justify-end p-5"
+            >
+              <img
+                id="img-b"
+                src=""
+                class="absolute inset-0 w-full h-full object-cover opacity-60"
+              />
+              <div
+                class="absolute inset-0 bg-gradient-to-t from-[#0a0d14] via-[#0a0d14]/40 to-transparent"
+              ></div>
+
+              <!-- Result Overlay -->
+              <div
+                id="overlay-b"
+                class="absolute inset-0 bg-purple-950/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center space-y-2 opacity-0 pointer-events-none transition-opacity duration-300"
+              >
+                <span
+                  id="winner-tag-b"
+                  class="bg-amber-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded"
+                  >WINNER 🏆</span
+                >
+                <span id="pct-b" class="text-4xl font-black text-white"
+                  >50%</span
+                >
+                <span id="elo-tag-b" class="text-xs font-bold text-purple-400"
+                  >Elo: 1168 (-32)</span
+                >
+              </div>
+
+              <div class="relative z-10 space-y-1">
+                <span
+                  class="bg-purple-500/20 text-purple-400 text-[10px] font-bold px-2 py-0.5 rounded border border-purple-500/30"
+                  >OPTION B</span
+                >
+                <h2 id="title-b" class="text-xl font-black text-white">
+                  Option B
+                </h2>
+                <p id="desc-b" class="text-xs text-slate-300 line-clamp-2">
+                  Description B...
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="flex justify-between items-center text-xs text-slate-500 pt-2 border-t border-slate-800/80"
+          >
+            <button
+              onclick="loadNextMatchup()"
+              class="hover:text-slate-300 transition flex items-center space-x-1.5"
+            >
+              <i class="fa-solid fa-forward-step text-[10px]"></i>
+              <span>Auto-Skip in 5s or Click to Skip</span>
+            </button>
+            <span id="total-votes-cast-bottom" class="text-slate-400 font-mono"
+              >0 total votes cast</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN -->
+      <aside
+        class="lg:col-span-3 bg-[#0e1320] border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[600px] lg:h-auto"
+      >
+        <div
+          class="border-b border-slate-800 pb-3 mb-3 flex justify-between items-center"
+        >
+          <span
+            class="text-xs font-bold text-white tracking-wider uppercase flex items-center space-x-2"
+          >
+            <i class="fa-regular fa-comments text-cyan-400"></i>
+            <span>Live Debate</span>
+          </span>
+          <span class="text-[10px] text-slate-500">Realtime</span>
+        </div>
+
+        <div
+          id="chat-messages"
+          class="flex-grow overflow-y-auto space-y-3 pr-1 text-xs"
+        >
+          <div class="text-center text-slate-500 py-8">
+            Loading live debate comments...
+          </div>
+        </div>
+
+        <form
+          onsubmit="postComment(event)"
+          class="mt-3 pt-3 border-t border-slate-800 flex items-center space-x-2"
+        >
+          <input
+            type="text"
+            id="chat-input"
+            placeholder="Throw fuel on the fire..."
+            required
+            class="flex-grow bg-[#080b12] border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+          />
+          <button
+            type="submit"
+            class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 p-2 rounded-xl text-xs transition"
+          >
+            <i class="fa-solid fa-paper-plane px-1"></i>
+          </button>
+        </form>
+      </aside>
+    </main>
+
+    <!-- SUPABASE CLIENT SCRIPT -->
+    <script>
+      const SUPABASE_URL = "https://pkurikekgrklkgepsoex.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "sb_publishable_w0Fkj878yWNiCS2kPu3-qg_h9h4JKar";
+      ("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrdXJpa2VrZ3JrbGtnZXBzb2V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzMjI5NzUsImV4cCI6MjA1Njg5ODk3NX0.JjT-0c2y3d5b7Y9Z1A2B3C4D5E6F7G8H9I0J1K2L3M4");
+
+      const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      let matchupsList = [];
+      let currentIndex = 0;
+      let currentMatchup = null;
+      let timerInterval = null;
+      let timeLeft = 5.0;
+      let userVotesCount = 0;
+      let streak = 0;
+      let isVotingLocked = false;
+
+      const userFingerprint =
+        "user_" + Math.random().toString(36).substring(2, 9);
+
+      function toggleNotifDrawer() {
+        const drawer = document.getElementById("notif-drawer");
+        drawer.classList.toggle("translate-x-full");
+        if (!drawer.classList.contains("translate-x-full")) {
+          document.getElementById("notif-dot").classList.add("hidden");
+        }
+      }
+
+      // Close drawer when clicking outside
+      window.addEventListener("click", (e) => {
+        const drawer = document.getElementById("notif-drawer");
+        const bellBtn = document.getElementById("bell-btn");
+        if (!drawer.classList.contains("translate-x-full")) {
+          if (!drawer.contains(e.target) && !bellBtn.contains(e.target)) {
+            drawer.classList.add("translate-x-full");
+          }
+        }
+      });
+
+      function addNotification(title, detail) {
+        const list = document.getElementById("notif-list");
+        const notif = document.createElement("div");
+        notif.className =
+          "bg-[#080b12] p-3 rounded-xl border border-slate-800 space-y-1";
+        notif.innerHTML = `
+                <p class="font-bold text-amber-400 text-xs">${escapeHtml(title)}</p>
+                <p class="text-slate-400 text-[11px]">${escapeHtml(detail)}</p>
+                <span class="text-[9px] text-slate-600 block">Just now</span>
+            `;
+        list.prepend(notif);
+        document.getElementById("notif-dot").classList.remove("hidden");
+      }
+
+      function closeWelcomeModal() {
+        document.getElementById("welcome-modal").classList.add("hidden");
+        startBlitzTimer();
+      }
+
+      function startBlitzTimer() {
+        clearInterval(timerInterval);
+        timeLeft = 5.0;
+        updateTimerUI();
+
+        timerInterval = setInterval(() => {
+          if (isVotingLocked) return;
+          timeLeft -= 0.1;
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            loadNextMatchup();
+          } else {
+            updateTimerUI();
+          }
+        }, 100);
+      }
+
+      function updateTimerUI() {
+        const bar = document.getElementById("blitz-timer-bar");
+        const txt = document.getElementById("timer-text");
+        bar.style.width = Math.max(0, (timeLeft / 5.0) * 100) + "%";
+        txt.innerText = Math.max(0, timeLeft).toFixed(1) + "s";
+      }
+
+      async function fetchMatchups() {
+        const { data, error } = await db.from("matchups").select("*");
+        if (error) return;
+        if (data && data.length > 0) {
+          matchupsList = data;
+          renderMatchup(0);
+          renderTopGlobalDebates(data);
+        }
+      }
+
+      function renderMatchup(index) {
+        if (!matchupsList[index]) return;
+        isVotingLocked = false;
+        currentIndex = index;
+        currentMatchup = matchupsList[index];
+
+        document.getElementById("overlay-a").classList.add("opacity-0");
+        document.getElementById("overlay-b").classList.add("opacity-0");
+
+        document.getElementById("title-a").innerText =
+          currentMatchup.option_a_title;
+        document.getElementById("title-b").innerText =
+          currentMatchup.option_b_title;
+        document.getElementById("desc-a").innerText =
+          currentMatchup.option_a_desc || "Option A Details";
+        document.getElementById("desc-b").innerText =
+          currentMatchup.option_b_desc || "Option B Details";
+        document.getElementById("img-a").src = currentMatchup.option_a_img;
+        document.getElementById("img-b").src = currentMatchup.option_b_img;
+
+        const total =
+          (currentMatchup.option_a_votes || 0) +
+          (currentMatchup.option_b_votes || 0);
+        document.getElementById("total-votes-cast-bottom").innerText =
+          (total * 1000).toLocaleString() + " total votes cast";
+
+        fetchComments(currentMatchup.id);
+        startBlitzTimer();
+      }
+
+      function loadNextMatchup() {
+        if (matchupsList.length === 0) return;
+        const nextIdx = (currentIndex + 1) % matchupsList.length;
+        renderMatchup(nextIdx);
+      }
+
+      async function submitVote(option) {
+        if (!currentMatchup || isVotingLocked) return;
+        isVotingLocked = true;
+
+        userVotesCount++;
+        streak++;
+        document.getElementById("votes-cast-count").innerText = userVotesCount;
+        document.getElementById("multiplier-val").innerText =
+          (1.0 + streak * 0.1).toFixed(1) + "x";
+        document.getElementById("user-streak").innerText = streak + "x";
+
+        const vA =
+          (currentMatchup.option_a_votes || 0) + (option === "A" ? 1 : 0);
+        const vB =
+          (currentMatchup.option_b_votes || 0) + (option === "B" ? 1 : 0);
+        const tot = vA + vB;
+        const pctA = Math.round((vA / tot) * 100);
+        const pctB = 100 - pctA;
+
+        document.getElementById("pct-a").innerText = pctA + "%";
+        document.getElementById("pct-b").innerText = pctB + "%";
+
+        let winnerTitle = "";
+        if (pctA >= pctB) {
+          document.getElementById("winner-tag-a").classList.remove("hidden");
+          document.getElementById("winner-tag-b").classList.add("hidden");
+          winnerTitle = currentMatchup.option_a_title;
+        } else {
+          document.getElementById("winner-tag-b").classList.remove("hidden");
+          document.getElementById("winner-tag-a").classList.add("hidden");
+          winnerTitle = currentMatchup.option_b_title;
+        }
+
+        document.getElementById("overlay-a").classList.remove("opacity-0");
+        document.getElementById("overlay-b").classList.remove("opacity-0");
+
+        addNotification(
+          "Matchup Winner Declared! 🏆",
+          `${winnerTitle} leads with ${Math.max(pctA, pctB)}% votes!`,
+        );
+
+        await db.rpc("process_matchup_vote", {
+          p_matchup_id: currentMatchup.id,
+          p_winning_option: option,
+          p_user_fingerprint: userFingerprint,
+        });
+
+        setTimeout(() => {
+          loadNextMatchup();
+        }, 1800);
+      }
+
+      function renderTopGlobalDebates(data) {
+        const container = document.getElementById("top-debates-list");
+        container.innerHTML = "";
+
+        data.slice(0, 5).forEach((m, idx) => {
+          const total = (m.option_a_votes || 0) + (m.option_b_votes || 0);
+          const pctA =
+            total > 0 ? Math.round((m.option_a_votes / total) * 100) : 50;
+
+          const div = document.createElement("div");
+          div.className =
+            "bg-[#080b12] p-3 rounded-xl border border-slate-800/60 flex items-center justify-between";
+          div.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="font-black text-amber-400 text-xs">#${idx + 1}</span>
+                        <span class="font-bold text-slate-200">${escapeHtml(m.option_a_title)}</span>
+                    </div>
+                    <span class="font-mono font-bold text-cyan-400 text-xs">${pctA}%</span>
+                `;
+          container.appendChild(div);
+        });
+      }
+
+      async function fetchComments(matchupId) {
+        const { data, error } = await db
+          .from("comments")
+          .select("*")
+          .eq("matchup_id", matchupId)
+          .order("created_at", { ascending: true });
+        if (error) return;
+
+        const container = document.getElementById("chat-messages");
+        container.innerHTML = "";
+        if (data.length === 0) {
+          container.innerHTML = `<div class="text-center text-slate-500 py-8">No comments yet.</div>`;
+          return;
+        }
+        data.forEach((c) => appendCommentUI(c));
+        container.scrollTop = container.scrollHeight;
+      }
+
+      function appendCommentUI(comment) {
+        const container = document.getElementById("chat-messages");
+        if (container.children[0]?.classList.contains("text-center"))
+          container.innerHTML = "";
+
+        const msgDiv = document.createElement("div");
+        msgDiv.className =
+          "bg-[#080b12] p-3 rounded-xl border border-slate-800 space-y-1";
+        msgDiv.innerHTML = `
+                <div class="flex justify-between items-center text-[10px]">
+                    <span class="font-bold text-cyan-400">${escapeHtml(comment.username || "Anonymous")}</span>
+                    <span class="text-slate-500">Just now</span>
+                </div>
+                <p class="text-slate-200 text-xs">${escapeHtml(comment.message)}</p>
+            `;
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      async function postComment(e) {
+        e.preventDefault();
+        const input = document.getElementById("chat-input");
+        const msg = input.value.trim();
+        if (!msg || !currentMatchup) return;
+        input.value = "";
+        await db
+          .from("comments")
+          .insert([
+            { matchup_id: currentMatchup.id, username: "You", message: msg },
+          ]);
+      }
+
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        fetchMatchups();
+      });
+    </script>
+  </body>
+</html>
